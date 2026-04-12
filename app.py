@@ -16,17 +16,14 @@ st.markdown("""
     background-color: #0f172a;
     color: #e5e7eb;
 }
-
 h1 {
     text-align: center;
     font-size: 2.5rem;
 }
-
 [data-testid="stChatMessage"] {
     border-radius: 12px;
     padding: 10px;
 }
-
 section[data-testid="stSidebar"] {
     background-color: #020617;
 }
@@ -39,7 +36,7 @@ section[data-testid="stSidebar"] {
 st.markdown("""
 <h1>💰 Finix IA</h1>
 <p style='text-align:center; color: gray;'>
-Assistente financeiro estratégico
+Assistente financeiro estratégico baseado em análise real
 </p>
 """, unsafe_allow_html=True)
 
@@ -57,6 +54,8 @@ with st.sidebar:
 
     if st.button("Limpar conversa"):
         st.session_state.messages = []
+        st.session_state.renda = None
+        st.session_state.gastos = None
         st.rerun()
 
 # =========================
@@ -85,7 +84,7 @@ def extrair_numeros(p):
     return [int(n) for n in numeros]
 
 # =========================
-# RESPOSTA
+# RESPOSTA INTELIGENTE
 # =========================
 def responder(pergunta):
     p = pergunta.lower()
@@ -94,68 +93,155 @@ def responder(pergunta):
 
     partes = []
 
+    # SAUDAÇÃO
     if "saudacao" in intencoes:
-        partes.append("Tudo sob controle.")
+        partes.append("Tudo sob controle. Vamos direto ao ponto.\n")
 
+    # SALVAR DADOS
     if len(numeros) >= 2:
         st.session_state["renda"] = numeros[0]
         st.session_state["gastos"] = numeros[1]
 
-    renda = st.session_state.get("renda")
-    gastos = st.session_state.get("gastos")
+    renda = st.session_state.get("renda", None)
+    gastos = st.session_state.get("gastos", None)
 
+    # =========================
+    # PLANEJAMENTO
+    # =========================
     if "planejamento" in intencoes:
         if renda is not None and gastos is not None:
             sobra = renda - gastos
+
             if sobra <= 0:
                 partes.append(f"""
-Renda: R${renda}
-Gastos: R${gastos}
+📊 Situação atual:
 
-Você está no negativo.
+Você ganha R${renda} e gasta R${gastos}.
+
+Resultado: você está no negativo.
+
+📉 Problema:
+Sem sobra, não existe investimento nem crescimento financeiro.
+
+✔️ Ação imediata:
+- cortar gastos
+- eliminar excessos
+- buscar renda extra
+
+Exemplo:
+Reduzir R$300 já muda seu cenário.
+
+Conclusão:
+Primeiro parar de perder, depois crescer.
 """)
             else:
-                partes.append(f"""
-Renda: R${renda}
-Gastos: R${gastos}
-Sobra: R${sobra}
+                investir = sobra * 0.5
+                reserva = sobra * 0.3
+                lazer = sobra * 0.2
 
-→ Investir: R${sobra*0.5:.0f}
-→ Reserva: R${sobra*0.3:.0f}
-→ Lazer: R${sobra*0.2:.0f}
+                partes.append(f"""
+📊 Análise completa:
+
+Renda: R${renda}  
+Gastos: R${gastos}  
+Sobra: R${sobra}  
+
+💡 Estratégia:
+
+- Investir: R${investir:.0f}
+- Reserva: R${reserva:.0f}
+- Lazer: R${lazer:.0f}
+
+📈 Explicação:
+Investimentos fazem seu dinheiro crescer.  
+Reserva protege contra imprevistos.  
+Lazer evita desistência.
+
+📊 Exemplo:
+Investindo R${investir:.0f}/mês por anos → crescimento exponencial.
+
+Conclusão:
+Você já está em posição de evolução.
+
+Quer que eu simule o crescimento?
 """)
         else:
-            partes.append("Me diga sua renda e gastos.")
+            partes.append("""
+Preciso dos seus números.
 
+Exemplo:
+"ganho 2000 e gasto 1200"
+""")
+
+    # =========================
+    # INVESTIMENTO
+    # =========================
     if "investimento" in intencoes:
         partes.append("""
-Exemplo:
-R$200/mês → 10 anos ≈ R$40 mil
+💸 Investimento:
 
-Consistência é o principal fator.
+Base = consistência.
+
+Exemplo:
+R$200/mês  
+10 anos → ~R$40.000  
+
+Quanto antes começar, melhor.
+
+Tempo > dinheiro inicial.
 """)
 
+    # =========================
+    # GASTOS
+    # =========================
     if "gastos" in intencoes:
         partes.append("""
-Anote tudo por 30 dias.
-Corte 20% do desnecessário.
+📉 Controle de gastos:
+
+1. anotar tudo  
+2. separar necessário/supérfluo  
+3. cortar 20%
+
+Resultado:
+mais dinheiro livre todo mês.
 """)
 
+    # =========================
+    # RENDA EXTRA
+    # =========================
     if "renda" in intencoes:
         partes.append("""
-Renda extra:
+💼 Renda extra:
+
 - Freelance
 - Revenda
 - Internet
+
+Foque no que pode crescer.
 """)
 
+    # =========================
+    # RIQUEZA
+    # =========================
     if "riqueza" in intencoes:
         partes.append("""
-Riqueza = tempo + investimento + renda
+🧠 Riqueza:
+
+Renda + investimento + tempo.
+
+Sem consistência, não existe resultado.
 """)
 
+    # FALLBACK
     if not partes:
-        return "Seja mais específico ou envie números."
+        return """
+Seja mais específico.
+
+Exemplo:
+"ganho 2000 e gasto 1200"
+ou
+"como investir?"
+"""
 
     return "\n".join(partes)
 
