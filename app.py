@@ -1,4 +1,5 @@
 import re
+import streamlit as st
 
 # =========================
 # INTENÇÕES
@@ -9,8 +10,8 @@ def detectar_intencoes(p):
         "planejamento": ["planejamento", "organizar", "controlar", "finanças", "dinheiro"],
         "investimento": ["investir", "investimento", "juros", "aplicar"],
         "gastos": ["gastos", "despesas", "gastar"],
-        "renda": ["renda", "ganhar dinheiro", "renda extra"],
-        "riqueza": ["rico", "enriquecer"]
+        "renda_extra": ["renda extra", "ganhar dinheiro", "extra"],
+        "riqueza": ["rico", "enriquecer", "riqueza"]
     }
 
     encontrados = []
@@ -41,130 +42,142 @@ def responder(pergunta):
     intencoes = detectar_intencoes(p)
     numeros = extrair_numeros(p)
 
-    resposta = ""
+    partes = []
 
     # =========================
     # SAUDAÇÃO
     # =========================
     if "saudacao" in intencoes:
-        resposta += "Tudo sob controle. "
+        partes.append("Tudo sob controle.")
 
     # =========================
-    # SE TEM NÚMEROS → SALVA MEMÓRIA
+    # SALVAR DADOS
     # =========================
     if len(numeros) >= 2:
         st.session_state["renda"] = numeros[0]
         st.session_state["gastos"] = numeros[1]
 
+    renda = st.session_state.get("renda", None)
+    gastos = st.session_state.get("gastos", None)
+
     # =========================
-    # PLANEJAMENTO COM DADOS
+    # PLANEJAMENTO
     # =========================
     if "planejamento" in intencoes:
-        renda = st.session_state.get("renda")
-        gastos = st.session_state.get("gastos")
-
-        if renda and gastos:
+        if renda is not None and gastos is not None:
             sobra = renda - gastos
 
             if sobra <= 0:
-                resposta += f"""
-Você está no negativo.
+                partes.append(f"""
+📊 Situação atual:
 
 Renda: R${renda}
 Gastos: R${gastos}
 
-Corte custos antes de pensar em investir.
-"""
+Você está no negativo.
+Prioridade: cortar gastos.
+""")
             else:
                 investir = sobra * 0.5
                 reserva = sobra * 0.3
                 lazer = sobra * 0.2
 
-                resposta += f"""
-Plano baseado nos seus dados:
+                partes.append(f"""
+📊 Plano financeiro:
 
 Renda: R${renda}
 Gastos: R${gastos}
 Sobra: R${sobra}
 
-Distribuição:
+Divisão:
 → Investir: R${investir:.0f}
 → Reserva: R${reserva:.0f}
 → Lazer: R${lazer:.0f}
 
-Se manter isso, você evolui financeiramente.
-"""
+Estratégia simples, mas eficiente.
+""")
         else:
-            resposta += """
-Para montar um plano, preciso dos seus números.
+            partes.append("""
+Preciso dos seus dados.
 
 Exemplo:
 "ganho 2000 e gasto 1200"
-"""
+""")
 
     # =========================
     # INVESTIMENTO
     # =========================
     if "investimento" in intencoes:
-        resposta += """
+        partes.append("""
+💸 Investimento:
 
-Investimento depende de consistência.
+Consistência > valor inicial
 
 Exemplo:
 R$200/mês a 10% ao ano:
-→ 10 anos ≈ R$40 mil
+→ 10 anos ≈ R$40.000
 
 Quanto você conseguiria investir por mês?
-"""
+""")
 
     # =========================
     # GASTOS
     # =========================
     if "gastos" in intencoes:
-        resposta += """
+        partes.append("""
+📉 Controle de gastos:
 
-Controle de gastos:
+1. Anote tudo por 30 dias
+2. Corte 20% do desnecessário
 
-Anote tudo por 30 dias  
-Corte 20% do desnecessário  
-
-R$100 economizados/mês = R$1200/ano
-"""
+R$100/mês economizados = R$1200/ano
+""")
 
     # =========================
     # RENDA EXTRA
     # =========================
-    if "renda" in intencoes:
-        resposta += """
+    if "renda_extra" in intencoes:
+        partes.append("""
+💼 Renda extra:
 
-Renda extra:
-
-- Freelance  
-- Revenda  
-- Internet  
+- Freelance
+- Revenda
+- Internet
 
 Prefira algo escalável.
-"""
+""")
 
     # =========================
     # RIQUEZA
     # =========================
     if "riqueza" in intencoes:
-        resposta += """
+        partes.append("""
+🧠 Riqueza:
 
-Riqueza = renda + investimento + tempo.
+Renda + investimento + tempo
 
 Sem consistência, não funciona.
-"""
+""")
 
     # =========================
-    # SE NADA DETECTADO
+    # SE TEM NÚMEROS MAS SEM INTENÇÃO
     # =========================
-    if resposta.strip() == "":
-        resposta = """
-Seja mais direto.
+    if len(numeros) >= 2 and "planejamento" not in intencoes:
+        partes.append("""
+Quer que eu monte um planejamento com esses números?
+""")
 
-Ou me manda números que eu analiso.
+    # =========================
+    # FALLBACK
+    # =========================
+    if not partes:
+        return """
+Seja mais específico.
+
+Exemplos:
+- "ganho 2000 e gasto 1200"
+- "como investir?"
+- "como organizar meu dinheiro?"
 """
 
-    return resposta
+    return "\n".join(partes)
