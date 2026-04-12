@@ -1,183 +1,170 @@
-import streamlit as st
-import time
-
-st.set_page_config(page_title="Finix IA", page_icon="💰")
-
-st.title("💰 Finix IA")
-st.caption("Finix IA v1.0 | Assistente financeiro inteligente")
+import re
 
 # =========================
-# Funções
+# INTENÇÕES
 # =========================
+def detectar_intencoes(p):
+    intents = {
+        "saudacao": ["oi", "olá", "eae", "fala", "bom dia", "boa tarde"],
+        "planejamento": ["planejamento", "organizar", "controlar", "finanças", "dinheiro"],
+        "investimento": ["investir", "investimento", "juros", "aplicar"],
+        "gastos": ["gastos", "despesas", "gastar"],
+        "renda": ["renda", "ganhar dinheiro", "renda extra"],
+        "riqueza": ["rico", "enriquecer"]
+    }
 
-def calcular_juros_compostos(valor, taxa, tempo):
-    return valor * (1 + taxa) ** tempo
+    encontrados = []
 
+    for intent, palavras in intents.items():
+        for palavra in palavras:
+            if palavra in p:
+                encontrados.append(intent)
+                break
+
+    return encontrados
+
+
+# =========================
+# EXTRAIR NÚMEROS
+# =========================
+def extrair_numeros(p):
+    numeros = re.findall(r'\d+', p)
+    return [int(n) for n in numeros]
+
+
+# =========================
+# RESPOSTA PRINCIPAL
+# =========================
 def responder(pergunta):
     p = pergunta.lower()
 
-    if "planejamento" in p or "organizar dinheiro" in p:
-        return """
-📊 Planejamento Financeiro
+    intencoes = detectar_intencoes(p)
+    numeros = extrair_numeros(p)
 
-Organizar seu dinheiro é simples se seguir um método:
+    resposta = ""
 
-1) Descubra quanto sobra no mês  
-Subtraia seus gastos da sua renda.
+    # =========================
+    # SAUDAÇÃO
+    # =========================
+    if "saudacao" in intencoes:
+        resposta += "Tudo sob controle. "
 
-2) Divida sua sobra:
-- 50% Investimentos
-- 30% Reserva de emergência
-- 20% Lazer
+    # =========================
+    # SE TEM NÚMEROS → SALVA MEMÓRIA
+    # =========================
+    if len(numeros) >= 2:
+        st.session_state["renda"] = numeros[0]
+        st.session_state["gastos"] = numeros[1]
+
+    # =========================
+    # PLANEJAMENTO COM DADOS
+    # =========================
+    if "planejamento" in intencoes:
+        renda = st.session_state.get("renda")
+        gastos = st.session_state.get("gastos")
+
+        if renda and gastos:
+            sobra = renda - gastos
+
+            if sobra <= 0:
+                resposta += f"""
+Você está no negativo.
+
+Renda: R${renda}
+Gastos: R${gastos}
+
+Corte custos antes de pensar em investir.
+"""
+            else:
+                investir = sobra * 0.5
+                reserva = sobra * 0.3
+                lazer = sobra * 0.2
+
+                resposta += f"""
+Plano baseado nos seus dados:
+
+Renda: R${renda}
+Gastos: R${gastos}
+Sobra: R${sobra}
+
+Distribuição:
+→ Investir: R${investir:.0f}
+→ Reserva: R${reserva:.0f}
+→ Lazer: R${lazer:.0f}
+
+Se manter isso, você evolui financeiramente.
+"""
+        else:
+            resposta += """
+Para montar um plano, preciso dos seus números.
 
 Exemplo:
-Renda: R$2000  
-Gastos: R$1200  
-Sobra: R$800  
-
-Divisão:
-- R$400 investimentos  
-- R$240 reserva  
-- R$160 lazer  
-
-Isso cria equilíbrio entre futuro e presente.
+"ganho 2000 e gasto 1200"
 """
 
-    elif "investimento" in p or "juros" in p:
-        return """
-💸 Juros Compostos
+    # =========================
+    # INVESTIMENTO
+    # =========================
+    if "investimento" in intencoes:
+        resposta += """
 
-Juros compostos fazem seu dinheiro crescer sozinho com o tempo.
-
-Exemplo:
-Investindo R$1000 a 10% ao ano:
-
-- 1 ano: R$1100  
-- 5 anos: R$1610  
-- 10 anos: R$2590  
-
-Agora imagine investir todo mês:
-
-R$200/mês por 10 anos → +R$40.000
-
-Conclusão:
-Tempo + consistência = crescimento exponencial
-"""
-
-    elif "ficar rico" in p or "enriquecer" in p:
-        return """
-🧠 Como enriquecer
-
-Não é sorte, é estratégia:
-
-1) Aumentar renda
-Aprenda habilidades valorizadas (programação, vendas, design)
-
-2) Investir sempre
-Mesmo valores pequenos fazem diferença
-
-3) Tempo
-Quanto antes começar, melhor
+Investimento depende de consistência.
 
 Exemplo:
 R$200/mês a 10% ao ano:
-→ em 10 anos ≈ R$40.000
+→ 10 anos ≈ R$40 mil
 
-Resumo:
-Disciplina > Motivação
+Quanto você conseguiria investir por mês?
 """
 
-    elif "gastos" in p:
-        return """
-📉 Controle de Gastos
+    # =========================
+    # GASTOS
+    # =========================
+    if "gastos" in intencoes:
+        resposta += """
 
-Método prático:
+Controle de gastos:
 
-1) Anote tudo por 30 dias
-Ex:
-- Lanche: R$15  
-- Uber: R$20  
-- Assinaturas: R$30  
+Anote tudo por 30 dias  
+Corte 20% do desnecessário  
 
-2) Separe:
-- Necessário  
-- Supérfluo  
-
-3) Corte 20% do supérfluo
-
-Exemplo:
-R$500 gastos desnecessários  
-→ corta 20% = R$100/mês  
-
-Em 1 ano:
-→ R$1200 economizados
-
-Esse dinheiro pode virar investimento.
+R$100 economizados/mês = R$1200/ano
 """
 
-    elif "renda extra" in p:
-        return """
-💼 Renda Extra
+    # =========================
+    # RENDA EXTRA
+    # =========================
+    if "renda" in intencoes:
+        resposta += """
 
-Formas reais de ganhar dinheiro:
+Renda extra:
 
-1) Freelance
-- Design, edição, programação
+- Freelance  
+- Revenda  
+- Internet  
 
-2) Revenda
-Comprar barato e vender mais caro
-
-3) Internet
-Criar conteúdo ou produtos digitais
-
-Exemplo:
-Compra por R$20 → vende por R$40  
-Lucro: R$20 por unidade
-
-Importante:
-Prefira algo que possa crescer (escala).
+Prefira algo escalável.
 """
 
-    else:
-        return """
-❓ Não entendi totalmente sua pergunta.
+    # =========================
+    # RIQUEZA
+    # =========================
+    if "riqueza" in intencoes:
+        resposta += """
 
-Você pode perguntar sobre:
-- planejamento financeiro  
-- investimentos  
-- gastos  
-- renda extra  
+Riqueza = renda + investimento + tempo.
 
-Tente algo mais específico.
+Sem consistência, não funciona.
 """
 
-# =========================
-# Chat (estilo ChatGPT)
-# =========================
+    # =========================
+    # SE NADA DETECTADO
+    # =========================
+    if resposta.strip() == "":
+        resposta = """
+Seja mais direto.
 
-if "messages" not in st.session_state:
-    st.session_state.messages = []
+Ou me manda números que eu analiso.
+"""
 
-# Exibir histórico
-for msg in st.session_state.messages:
-    with st.chat_message(msg["role"]):
-        st.markdown(msg["content"])
-
-# Input do usuário
-if prompt := st.chat_input("Digite sua pergunta..."):
-    
-    # salva usuário
-    st.session_state.messages.append({"role": "user", "content": prompt})
-    
-    with st.chat_message("user"):
-        st.markdown(prompt)
-
-    # simula "pensando"
-    with st.chat_message("assistant"):
-        with st.spinner("Pensando..."):
-            time.sleep(1)
-            resposta = responder(prompt)
-            st.markdown(resposta)
-
-    # salva resposta
-    st.session_state.messages.append({"role": "assistant", "content": resposta})
+    return resposta
