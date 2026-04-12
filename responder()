@@ -1,0 +1,155 @@
+import re
+
+def detectar_intencao(p):
+    intents = {
+        "planejamento": ["organizar", "planejamento", "controlar", "finanças", "dinheiro"],
+        "investimento": ["investir", "investimento", "juros", "render", "aplicar"],
+        "gastos": ["gastos", "despesas", "gastar", "economizar", "cortar"],
+        "renda": ["renda extra", "ganhar dinheiro", "renda", "lucro", "vender"],
+        "riqueza": ["rico", "enriquecer", "riqueza"]
+    }
+
+    score = {k: 0 for k in intents}
+
+    for intent, palavras in intents.items():
+        for palavra in palavras:
+            if palavra in p:
+                score[intent] += 1
+
+    return max(score, key=score.get)
+
+
+def extrair_numeros(p):
+    numeros = re.findall(r'\d+', p)
+    return [int(n) for n in numeros]
+
+
+def responder(pergunta):
+    p = pergunta.lower()
+
+    intencao = detectar_intencao(p)
+    numeros = extrair_numeros(p)
+
+    # =========================
+    # SE TEM NÚMEROS → ANALISA
+    # =========================
+    if len(numeros) >= 2:
+        renda, gastos = numeros[0], numeros[1]
+        sobra = renda - gastos
+
+        if sobra <= 0:
+            return f"""
+Você está no negativo.
+
+Renda: R${renda}
+Gastos: R${gastos}
+
+Conclusão:
+Você precisa reduzir custos antes de pensar em investir.
+"""
+        else:
+            investir = sobra * 0.5
+            reserva = sobra * 0.3
+            lazer = sobra * 0.2
+
+            return f"""
+Análise direta:
+
+Renda: R${renda}
+Gastos: R${gastos}
+Sobra: R${sobra}
+
+Divisão recomendada:
+→ Investir: R${investir:.0f}
+→ Reserva: R${reserva:.0f}
+→ Lazer: R${lazer:.0f}
+
+Se mantiver isso por meses, sua situação melhora rápido.
+"""
+
+    # =========================
+    # INTENÇÕES
+    # =========================
+
+    if intencao == "planejamento":
+        return """
+Você quer controle financeiro.
+
+Regra base:
+Renda - gastos = sobra
+
+Depois divide:
+50% investir
+30% reserva
+20% lazer
+
+Se quiser, me diga seus números que eu analiso.
+"""
+
+    elif intencao == "investimento":
+        return """
+Investimento depende de consistência.
+
+Exemplo:
+R$200/mês a 10% ao ano:
+
+5 anos → ~R$15 mil  
+10 anos → ~R$40 mil  
+
+Pergunta:
+quanto você conseguiria investir por mês?
+"""
+
+    elif intencao == "gastos":
+        return """
+Seu problema provavelmente não é renda, é controle.
+
+Faça isso:
+1. anote tudo por 30 dias
+2. corte 20% do desnecessário
+
+Exemplo:
+R$100 economizados/mês = R$1200/ano
+
+Quer analisar seus gastos?
+"""
+
+    elif intencao == "renda":
+        return """
+Existem 2 formas:
+
+1. trocar tempo por dinheiro
+2. criar algo escalável
+
+Exemplo:
+comprar por 20 → vender por 40
+
+Você quer algo rápido ou algo que cresce?
+"""
+
+    elif intencao == "riqueza":
+        return """
+Riqueza é acúmulo.
+
+3 fatores:
+renda + investimento + tempo
+
+Sem um desses, não funciona.
+
+Você está focando em qual hoje?
+"""
+
+    # =========================
+    # FALLBACK
+    # =========================
+    return """
+Não ficou claro.
+
+Mas posso te ajudar com:
+- dinheiro
+- investimentos
+- gastos
+- renda
+
+Se quiser, manda números que eu analiso direto.
+"""
